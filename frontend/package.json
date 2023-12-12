@@ -1,0 +1,32 @@
+{
+  "name": "deodar-park",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^1.9.5",
+    "@tanstack/react-query": "^4.32.6",
+    "@tanstack/react-query-devtools": "^4.35.3",
+    "axios": "^1.4.0",
+    "chart.js": "^4.3.3",
+    "eslint": "8.46.0",
+    "eslint-config-next": "13.4.12",
+    "next": "13.4.12",
+    "primeflex": "^3.3.1",
+    "primeicons": "^6.0.1",
+    "primereact": "^9.6.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-redux": "^8.1.2",
+    "sass": "^1.64.2"
+  },
+  "devDependencies": {
+    "@tanstack/eslint-plugin-query": "^4.32.5",
+    "prettier": "^3.0.1"
+  }
+}
