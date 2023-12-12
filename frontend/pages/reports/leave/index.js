@@ -1,662 +1,363 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-import { Button } from "primereact/button";
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
-import { Dropdown } from "primereact/dropdown";
-import { InputText } from "primereact/inputtext";
-import { ProgressSpinner } from "primereact/progressspinner";
-import { Toast } from "primereact/toast";
+import { Button } from 'primereact/button';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
+import { ProgressSpinner } from 'primereact/progressspinner';
+import { Toast } from 'primereact/toast';
+import { InputNumber } from 'primereact/inputnumber';
+import { Calendar } from 'primereact/calendar';
 
-import { useRouter } from "next/router";
-import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from 'next/router';
+import { useDispatch, useSelector } from 'react-redux';
 
-import { update } from "@/features/transaction/transactionSlice";
-import { update as entryUpdate } from "@/features/entry/entrySlice";
+import { update as transactionUpdate } from '@/features/transaction/transactionSlice';
+import { update as entryUpdate } from '@/features/entry/entrySlice';
+import { axiosInstance } from '@/utils/axiosInstance';
 
-import { useEmployeeInsurance,useInsuranceType } from "@/hooks/useInsurance";
-import { useLeaveType,useEmployeeLeave } from "@/hooks/useLeave";
-
-import { useDepartment, useEmployeeDepartment } from "@/hooks/useDepartment";
-import { useEmployeeRank, useRank } from "@/hooks/useRank";
-
-import { useEmployee } from "@/hooks/useEmployee";
-
-import { isError, useQueryClient } from "@tanstack/react-query";
-import { getEmployeeInsurance } from "@/pages/api/insurance.api";
-import { InputNumber } from "primereact/inputnumber";
-import { Calendar } from "primereact/calendar";
-
-
-const LeaveReport = () => 
-  {
-    
+const LeaveReport = () => {
     const router = useRouter();
     const toastRef = useRef(null);
-    const searchFilterValue = [
-      { name: "Employee ID", code: "id" },
-    ];
-    
+    const searchFilterValue = [{ name: 'Employee ID', code: 'id' }];
+
     const [filterDropdown, setFilterDropdown] = useState(searchFilterValue[0]);
-    const [globalFilterValue, setGlobalFilterValue] = useState("");
-    const [page, setPage] = useState(0);
+    const [globalFilterValue, setGlobalFilterValue] = useState('');
 
-    // for employeee
-    const { useEmployeeProfileFilterGetQuery, useEmployeeProfileSingleGetQuery } =
-    useEmployee();
-
-    //get rank type
-    const { useQueryGetRank } = useRank();
-    const { data: getRankType, isSuccess: getRankTypeSuccess } = useQueryGetRank();
-
-    // const {useInsurance}
-    const {useInsuranceTypeGetQuery} = useInsuranceType();
-    const {data: getInsuranceType, isSuccess: getInsuranceTypeSuccess} = useInsuranceTypeGetQuery();
-
-      // get department type
-    const { useDepartmentGetQuery } = useDepartment();
-    const { data: getDepartmentLists, isSuccess: getDepartmentListsSuccess } = useDepartmentGetQuery();
-    
-    // get insurance type
-    const [queryFetch, setQueryFetch] = useState({
-      field: null,
-      data: null,
-      datas: [],
-      empData: null,
-    });
-
-    const [firsts, setFirsts] = useState(0);
-    const [rows, setRows] = useState(10);
-
-    const { data: getSingleEmployee, isSuccess: getSingleEmployeeSuccess , isError :getSingleEmployeeError } =
-    useEmployeeProfileSingleGetQuery({
-      field: queryFetch.field,
-      data: queryFetch.data,
-    });
-
-    const { data: getEmployeeList, isSuccess: getEmployeeListSuccess } =
-    useEmployeeProfileFilterGetQuery({
-      field: queryFetch.field,
-      datas: queryFetch.datas,
-    });
-
-
-    const {
-      useMutationCreateEmployeeLeave,
-      useQueryGetEmployeeLeave,
-      useMutationUpdateEmployeeLeave,
-      useQueryGetSingleEmployeeLeave,
-    } 
-    = useEmployeeLeave(); 
-
-
-    const {
-      useMutationCreateLeaveType,
-      useQueryGetLeaveType,
-      useMutationUpdateLeaveType,
-    } = useLeaveType();
-
-    const { data: getLeaveType, isSuccess: getLeaveTypeSuccess } = useQueryGetLeaveType();
-
-    const {
-      data: getEmployeeLeave,
-      isSuccess: getEmployeeLeaveSuccess,
-      isPreviousData,
-      refetch,
-      isFetched,
-    } = useQueryGetEmployeeLeave(page);
-
-    const {
-      data: getSingleEmployeeLeave,
-      isSuccess: getSingleEmployeeLeaveSuccess,
-      isError : getSingleEmployeeLeaveError,
-    } = useQueryGetSingleEmployeeLeave(queryFetch.empData )
-
-    // const { data: getEmployeeLeave, isSuccess: getEmployeeLeaveSuccess } = useQueryGetEmployeeLeave();
-
-    // rank type 
-    const {
-      useMutationUpdateEmployeeRank,
-      useQueryGetEmployeeRank,
-      useQueryGetSingleEmployeeRank,
-    } 
-    = useEmployeeRank();
-  
-    // get evaluation rank
-    const [searchAll, setSearchAll] = useState("filter");
-
-    const 
-    {
-      data: getEmployeeRanks,
-      isSuccess: getEmployeeRanksSuccess,
-      isPreviousRankData,
-      refetchRank,
-      isFetchedRank,
-    } 
-    = useQueryGetEmployeeRank({ filter: searchAll, page });
-  
-// useEmployeeProfileUpdateMutation
-
-    const onSearchFilter = (id) => {
-
-      setQueryFetch(
-        (prevState) =>
-          ({
-            ...prevState,
-            data: id,
-            empData: id,
-          }) || prevState
-      );
-  
-      if (
-        getSingleEmployeeSuccess
-         &&
-         getSingleEmployeeLeaveSuccess
-          &&
-        getDepartmentListsSuccess
-      ) {
-  
-
-        const { data: employee } = getSingleEmployee;
-        
-        const { data: singleEmployeeLeave } = getSingleEmployeeLeave;
-  
-        const rank = getRankType.data.find(
-          (rank) => rank.rank_id === singleEmployeeLeave.emp_rank_id,
-        );
-
-        const department = getDepartmentLists.data.find(
-          (dept) => dept.dept_id === singleEmployeeLeave?.emp_dept_id,
-        );
-
-        const leaveType = getLeaveType.data.find((lt) => lt.lev_id === singleEmployeeLeave.lev_id);
-
-        // const department = getDepartment.data.find(
-        //   (dept) => dept.dept_id === employeeDepartment.dept_id
-        // );
-  
-        dispatch(
-          update({
-            stateProperty: "employeeLeave",
-            data: [
-              {
-                rid:singleEmployeeLeave.rid,
-                emp_id :employee.employee_name,
-                emp_rank_id : rank?.rank_desc,
-                emp_dept_id:department?.dept_desc,
-                lev_id : leaveType.lev_type,
-                total_leave_days:singleEmployeeLeave.total_leave_days,
-                leave_detail:singleEmployeeLeave.leave_detail,
-                leave_start_date : singleEmployeeLeave.leave_start_date,
-                leave_end_date : singleEmployeeLeave.leave_end_date,
-                approved_person : singleEmployeeLeave.approved_person,
-                approved_date : singleEmployeeLeave.approved_date
-              },
-            ],
-          })
-        );
-  
-      } 
-      else if (getSingleEmployeeError || getSingleEmployeeLeaveError) {
-        toastRef.current.show({
-          severity: "error",
-          summary: "Error",
-          detail: "This employee not set department.",
-        });
-      }
-
-
-
-    };
-
-
-    const 
-    {
-      data: getSingleEmployeeRank,
-      isSuccess: getSingleEmployeeRankSuccess,
-      isError: getSingleEmployeeRankError,
-    } 
-    = useQueryGetSingleEmployeeRank({ id: queryFetch.data });
+    const employeeLeaveList = useSelector(state => state.transaction.employeeLeave);
+    const leaveType = useSelector(state => state.entry.leaveType);
 
     const dispatch = useDispatch();
-    const [record, setRecord] = useState(0);
 
+    const [rows, setRows] = useState(10);
+    const [first, setFirst] = useState(0);
+    const [page, setPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => 
-    {
-      if(
-          getEmployeeLeaveSuccess &&
-          globalFilterValue === ""
-        )
-      {
-
-          let queryData = [];
-          setQueryFetch(
-            (prevState) =>
-              ({
-                ...prevState,
-                field: "id",
-                datas: queryData,
-              }) || prevState,
-          );
-
-          
-          const getEmployeeLeaveData = getEmployeeLeave.data;
-          
-          if(getEmployeeLeave?.count)
-          {
-              setRecord(getEmployeeLeave.count);
-          }
-
-          if(getEmployeeLeaveData){
-
-              const result = getEmployeeLeaveData.map((ie) => 
-              {
-                  queryData.push(ie.emp_id);   
-
-                  if(getRankTypeSuccess && getEmployeeListSuccess && getInsuranceTypeSuccess)
-                  {
-
-                    const employee = getEmployeeList.find(
-                      (emp) => emp.data.employeeID === parseInt(ie.emp_id),
-                    );
-
-                    const rank = getRankType.data.find(
-                      (rank) => rank.rank_id === ie.emp_rank_id,
-                    );
-
-                    const department = getDepartmentLists.data.find(
-                      (dept) => dept.dept_id === ie?.emp_dept_id,
-                    );
-
-                    const leaveType = getLeaveType.data.find((lt) => lt.lev_id === ie.lev_id);
-                      
-                    if(employee && rank && department)
-                    {
-                        return {
-                          rid:ie.rid,
-                          emp_id :employee.data.employee_name,
-                          emp_rank_id : rank?.rank_desc,
-                          emp_dept_id:department?.dept_desc,
-                          lev_id : leaveType.lev_type,
-                          total_leave_days:ie.total_leave_days,
-                          leave_detail:ie.leave_detail,
-                          leave_start_date : ie.leave_start_date,
-                          leave_end_date : ie.leave_end_date,
-                          approved_person : ie.approved_person,
-                          approved_date : ie.approved_date
-                        }
-                    }
-
-                  }
-                    
-              })
-              
-              dispatch(
-                update({
-                  stateProperty: "employeeLeave",
-                  data : result,
-                }),
-              );
-
-          }
-        }
-    },[
-      getEmployeeList,
-      getEmployeeLeaveSuccess,
-      dispatch,
-      globalFilterValue
-      // insuranceEmployee,
-      // insuranceEmployeeSuccess,
-    ]);
-
-    const employeeLeaveList = useSelector(
-      (state) => state.transaction.employeeLeave,
-    ); 
+    const onSearchFilter = id => {
+        console.log(id);
+    };
 
     const clearFilter = () => {
-      setGlobalFilterValue("");
-      refetch().catch((err) => console.log(err));
+        setGlobalFilterValue('');
     };
 
-    const onGlobalFilterChange = (e) => {
+    const onGlobalFilterChange = e => {
         setGlobalFilterValue(e.target.value);
-
-        setQueryFetch(
-          (prevState) =>
-            ({
-              ...prevState,
-              field: filterDropdown.code,
-              data: e.target.value,
-              empData: e.target.value,
-            }) || prevState
-        );
     };
 
-
-    useEffect(() => {
-      if (getLeaveTypeSuccess) {
-        if (!Array.isArray(getLeaveType.data)) {
-          dispatch(
-            entryUpdate({
-              stateProperty: "leaveType",
-              data: [getLeaveType.data],
-            })
-          );
-        } else {
-          dispatch(
-            entryUpdate({
-              stateProperty: "leaveType",
-              data: getLeaveType.data,
-            })
-          );
-        }
-      }
-    }, [dispatch, getLeaveTypeSuccess, getLeaveType]);
-
-    
-  
     // header for datatable
     const renderHeader = () => {
-      return (
-        <div className="flex gap-3">
-          <div>
+        return (
+            <div className='flex gap-3'>
+                <div>
+                    <Dropdown
+                        value={filterDropdown}
+                        onChange={e => {
+                            setFilterDropdown(e.target.value);
+                        }}
+                        options={searchFilterValue}
+                        optionLabel='name'
+                    />
+                </div>
+                <div className='p-inputgroup w-20rem'>
+                    <InputText
+                        type='search'
+                        placeholder='Search'
+                        value={globalFilterValue}
+                        onChange={onGlobalFilterChange}
+                    />
+
+                    <Button
+                        label='Search'
+                        onClick={() => onSearchFilter(globalFilterValue)}
+                    />
+                </div>
+                <Button
+                    label='Clear'
+                    severity='danger'
+                    onClick={clearFilter}
+                />
+            </div>
+        );
+    };
+
+    const dropDownEditor = options => {
+        const value = leaveType.find(lt => lt.lev_type === options.value);
+
+        return (
             <Dropdown
-              value={filterDropdown}
-              onChange={(e) => {
-                setFilterDropdown(e.target.value);
-                setQueryFetch(
-                  (prevState) =>
-                    ({
-                      ...prevState,
-                      field: e?.target.value.code,
-                    }) || prevState
-                );
-              }}
-              options={searchFilterValue}
-              optionLabel="name"
+                value={value}
+                onChange={e => {
+                    options.editorCallback(e.value?.lev_type);
+                    options.rowData.lev_id = e.value?.lev_id;
+                }}
+                options={leaveType}
+                optionLabel='lev_type'
+                placeholder='ရွေးချယ်ရန်'
             />
-          </div>
-          <div className="p-inputgroup w-20rem">
-            <InputText
-              type="search"
-              placeholder="Search"
-              value={globalFilterValue}
-              onChange={onGlobalFilterChange}
-            />
-  
-            <Button
-              label="Search"
-              onClick={() => onSearchFilter(globalFilterValue)}
-            />
-          </div>
-          <Button label="Clear" severity="danger" onClick={clearFilter} />
-        </div>
-      );
-    };
-
-    const leaveType = useSelector((state) => state.entry.leaveType);
-
-    const dropDownEditor = (options) => {
-
-      const value = getLeaveType.data.find((lt) => lt.lev_type === options.value);
-
-      return (
-        <Dropdown
-          value={value}
-          onChange={(e) => {
-            options.editorCallback(e.value?.lev_type);
-          }}
-          options={leaveType}
-          optionLabel="lev_type"
-          placeholder="ရွေးချယ်ရန်"
-        />
-      );
-    };
-
-
-    const { mutateAsync: updateEmployeeLeave } = useMutationUpdateEmployeeLeave();
-
-    const onEditHandler = async (e) => {
-		
-      try {
-        
-        const _employeeLeave = [...employeeLeaveList];
-        const { newData, index } = e;
-
-        console.log("newData",newData);
-        console.log("getLeaveType",getLeaveType);
-
-        const newEmployeeProfile = getLeaveType.data.find(
-          (lvT) => lvT.lev_type === newData.lev_id
-        );
-
-        console.log("newEmployeeProfile",newEmployeeProfile);
-        _employeeLeave[index] = {
-          ...newData,
-          lev_id: newEmployeeProfile.lev_id,
-        };
-  
-
-        await updateEmployeeLeave(
-          {
-            rid : newData.rid,
-            lev_id : newEmployeeProfile.lev_id, 
-            lev_day  : newData.lev_day,
-            total_leave_days : newData.total_leave_days,
-            leave_detail : newData.leave_detail,
-            leave_start_date : newData.leave_start_date,
-            leave_end_date : newData.leave_end_date,
-            approved_person : newData.approved_person,
-            approved_date : newData.approved_date,
-          },
-          {
-            onSuccess: async () => {
-              // try {
-                dispatch(
-                  update({
-                    stateProperty: "employeeLeave",
-                    data: _employeeLeave,
-                  })
-                );
-              // } catch (err) {
-              //   console.error(err);
-              // }
-            },
-            onSettled: (data, error) => {
-              if (error) {
-                toastRef.current.show({
-                  severity: "error",
-                  summary: "Error",
-                  detail: error?.message,
-                  life: 3000,
-                });
-              } else {
-                toastRef.current.show({
-                  severity: "success",
-                  summary: "Success",
-                  detail: data.message,
-                  life: 3000,
-                });
-              }
-            },
-          }
-        );
-      } catch (err) {
-        console.error(err);
-      }
-      
-    };
-
-
-    const allowanceAmount = (options) => {
-      return (
-          <InputNumber 
-              value={options.value} 
-              onValueChange={(e) => options.editorCallback(e.value)} 
-             />
         );
     };
 
-    const dateTimeEditor = (options) => {
-      return (
-        <Calendar
-          name={options.field}
-          value={new Date(options.value)}
-          onChange={(e) => options.editorCallback(e.target.value)}
-        />
-      );
+    // Calculate Date Function
+    const CalcDate = (startDateTime, endDateTime) => {
+        const startDate = new Date(startDateTime).getTime();
+        const endDate = new Date(endDateTime).getTime();
+        return Math.ceil(Math.abs((startDate - endDate) / (1000 * 3600 * 24)));
     };
 
-    const textEditor = (options) => {
-        return <InputText type="text" value={options.value} onChange={(e) => options.editorCallback(e.target.value)} />;
-     };
+    const onEditHandler = async e => {
+        try {
+            const { newData } = e;
 
-     const leaveDetail = (options) => {
-      return <InputText type="text" value={options.value} onChange={(e) => options.editorCallback(e.target.value)} />;
-   };
+            const durationDate = CalcDate(newData.leave_start_date, newData.leave_end_date);
 
-  
-  return (
-    <div className="flex-1">
-      <Toast 
-      ref={toastRef}
-       />
-      <div className="flex gap-5">
-        <Button
-          icon="pi pi-arrow-left"
-          rounded
-          raised
-          onClick={() => router.back()}
-        />
+            const res = await axiosInstance.put(`/leave/transaction/${newData.emp_lev_id}`, { ...newData, total_leave_days: durationDate });
+            const { message } = res.data;
 
-        <div className="h-full">
-          <h1 className="text-3xl underline">Leave Reports</h1>
-        </div>
-      </div>
-
-      <div className="col-12 mt-5 card">
-        {!isFetched && (
-          <div className="flex justify-content-center align-items-center">
-            <ProgressSpinner
-              style={{ width: "50px", height: "50px" }}
-              strokeWidth="8"
-              fill="var(--surface-ground)"
-              animationDuration=".5s"
-            />
-          </div>
-        )}
-        {
-        isFetched && (
-
-
-          <DataTable
-
-            value={
-              employeeLeaveList
-              || undefined
+            if (res.status === 200) {
+                fetchData().catch(error => console.log(error));
+                toastRef.current.show({ severity: 'success', summary: 'Success', detail: message });
             }
-            editMode="row"
-            paginator={true}
-            lazy={true}
-            first={firsts}
-            rows={rows}
-            totalRecords={record}
-            removableSort
-            showGridlines
-            onRowEditComplete={onEditHandler}
-            emptyMessage="Information not found"
-            header={renderHeader}
-            onPage={(e) => {
-              if (!isPreviousData) {
-                setFirsts(e.first);
-                setRows(e.rows);
-                setPage(e.page);
-              }
-            }}
+        } catch (error) {
+            toastRef.current.show({ severity: 'error', summary: 'Error', detail: error?.response?.data?.error });
+            console.log(error);
+        }
+    };
 
-          >
-            <Column field="rid" header="Id" sortable/>
+    const onDeleteHandler = async options => {
+        try {
+            const res = await axiosInstance.delete(`/leave/transaction/${options.emp_lev_id}`);
+            const { message } = res.data;
 
-            <Column field="emp_id" header="အမည်" />
+            if (res.status === 200) {
+                fetchData().catch(error => console.log(error));
+                toastRef.current.show({ severity: 'success', summary: 'Success', detail: message });
+            }
+        } catch (error) {
+            toastRef.current.show({ severity: 'error', summary: 'Error', detail: error?.response?.data?.error });
+            console.log(error);
+        }
+    };
 
-            <Column field="emp_rank_id" 
-                    header="Rank Type" 
+    const allowanceAmount = options => {
+        return (
+            <InputNumber
+                value={options.value}
+                onValueChange={e => options.editorCallback(e.value)}
+                readOnly
             />
+        );
+    };
 
-            <Column field="emp_dept_id" header="Department" />
-
-            <Column field="lev_id" 
-                    header="leave Type"
-                    editor={(options) => dropDownEditor(options)}
+    const dateTimeEditor = options => {
+        return (
+            <Calendar
+                name={options.field}
+                value={new Date(options.value)}
+                onChange={e => options.editorCallback(e.target.value)}
+                showIcon
             />
+        );
+    };
 
-            <Column field="total_leave_days" 
-                    header="total_leave_days"
-                    editor={(options) => 
-                      allowanceAmount(options)}  
-           />
-
-            <Column field="leave_detail" 
-                    header="leave_detail" 
-                    editor={(options) => 
-                      leaveDetail(options)}
+    const textEditor = options => {
+        return (
+            <InputText
+                type='text'
+                value={options.value}
+                onChange={e => options.editorCallback(e.target.value)}
             />
+        );
+    };
 
-            <Column field="leave_start_date"
-                    header="leave_start_date" 
-                    body={(options) =>
-                      new Date(options?.leave_start_date).toString().substring(0, 15)
-                    }
-                    editor={(options) => dateTimeEditor(options)}
-            />
+    const fetchLeaveType = useCallback(async () => {
+        try {
+            const res = await axiosInstance.get('/leave/entry');
+            const { data } = res.data;
 
-            <Column 
-                    field="leave_end_date" 
-                    header="leave_end_date" 
-                    body={(options) =>
-                      new Date(options?.leave_end_date).toString().substring(0, 15)
-                    }
-                    editor={(options) => dateTimeEditor(options)}
-            />
+            if (res.status === 200) {
+                dispatch(entryUpdate({ stateProperty: 'leaveType', data }));
+            }
+        } catch (error) {
+            dispatch(entryUpdate({ stateProperty: 'leaveType', data: [] }));
+            console.log(error);
+        }
+    }, [dispatch]);
 
-            <Column 
-                    field="approved_person" 
-                    header="approved_person"
-                    editor={(options) => 
-                      textEditor(options)}  
-            />
+    useEffect(() => {
+        fetchLeaveType().catch(error => console.log(error));
+    }, [fetchLeaveType]);
 
-            <Column field="approved_date" 
-                    header="approved_date"
-                    body={(options) =>
-                      new Date(options?.leave_end_date).toString().substring(0, 15)
-                    }
-                    editor={(options) => dateTimeEditor(options)}
-          />
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const res = await axiosInstance.get(`/leave/transaction?page=${page}&pageSize=${rows}`);
+            const { data, totalRecord } = res.data;
 
-            {/* <Column 
-                field="reg_date" 
-                header="Reg Date"
-                body={(options) =>
-                  new Date(options?.reg_date).toString().substring(0, 15)
-                }
-            /> */}
-            {/* <Column
-              field="dept_desc"
-              header="Department"
-              sortField="dept_id"
-              // editor={(options) => dropDownEditor(options)}
-            /> */}
+            if (res.status === 200) {
+                dispatch(transactionUpdate({ stateProperty: 'employeeLeave', data }));
+                setTotalRecord(totalRecord);
+                setIsLoading(false);
+            }
+        } catch (error) {
+            dispatch(transactionUpdate({ stateProperty: 'employeeLeave', data: [] }));
+            setTotalRecord(0);
+            setIsLoading(false);
+            console.log(error);
+        }
+    }, [page, rows, dispatch]);
 
-            <Column rowEditor />
-          </DataTable>
+    useEffect(() => {
+        fetchData().catch(error => console.log(error));
+    }, [fetchData]);
 
-        )
-      }
-      </div>
-    </div>
-  );
+    return (
+        <div className='flex-1'>
+            <Toast ref={toastRef} />
+            <div className='flex gap-5'>
+                <Button
+                    icon='pi pi-arrow-left'
+                    rounded
+                    raised
+                    onClick={() => router.back()}
+                />
+
+                <div className='h-full'>
+                    <h1 className='text-3xl underline'>Leave Reports</h1>
+                </div>
+            </div>
+
+            <div className='col-12 mt-5 card'>
+                {isLoading && (
+                    <div className='flex justify-content-center align-items-center'>
+                        <ProgressSpinner
+                            style={{ width: '50px', height: '50px' }}
+                            strokeWidth='8'
+                            fill='var(--surface-ground)'
+                            animationDuration='.5s'
+                        />
+                    </div>
+                )}
+                {!isLoading && (
+                    <DataTable
+                        value={employeeLeaveList || undefined}
+                        editMode='row'
+                        onRowEditComplete={onEditHandler}
+                        lazy={true}
+                        first={first}
+                        totalRecords={totalRecord}
+                        rowsPerPageOptions={[10, 30, 50, 100]}
+                        rows={rows}
+                        paginator
+                        onPage={e => {
+                            setRows(e.rows);
+                            setFirst(e.first);
+                            setPage(e.page);
+                        }}
+                        showGridlines={true}
+                        header={renderHeader}
+                        tableStyle={{ minWidth: '150rem' }}
+                    >
+                        <Column
+                            align='center'
+                            body={options => (
+                                <Button
+                                    icon='pi pi-fw pi-trash'
+                                    text
+                                    rounded
+                                    severity='danger'
+                                    onClick={() => onDeleteHandler(options)}
+                                />
+                            )}
+                        />
+
+                        <Column
+                            align='center'
+                            rowEditor
+                        />
+
+                        <Column
+                            header='No'
+                            body={(_, options) => options.rowIndex + 1}
+                        />
+
+                        <Column
+                            field='emp_id'
+                            header='ID'
+                        />
+
+                        <Column
+                            field='emp_name'
+                            header='အမည်'
+                        />
+
+                        <Column
+                            field='nrc'
+                            header='မှတ်ပုံတင်'
+                        />
+
+                        <Column
+                            field='dept_desc'
+                            header='ဌာန'
+                        />
+
+                        <Column
+                            field='rank_desc'
+                            header='ရာထူး'
+                        />
+
+                        <Column
+                            field='leave_type'
+                            header='ခွင့်အမျိုးအစား'
+                            editor={options => dropDownEditor(options)}
+                        />
+
+                        <Column
+                            field='total_leave_days'
+                            header='ခွင့်ရက်အရေအတွက်'
+                            editor={options => allowanceAmount(options)}
+                        />
+
+                        <Column
+                            field='leave_detail'
+                            header='အကြောင်းအရာ'
+                            editor={options => textEditor(options)}
+                        />
+
+                        <Column
+                            field='leave_start_date'
+                            header='State Date'
+                            body={options => new Date(options?.leave_start_date).toLocaleDateString()}
+                            editor={options => dateTimeEditor(options)}
+                        />
+
+                        <Column
+                            field='leave_end_date'
+                            header='End Date'
+                            body={options => new Date(options?.leave_end_date).toLocaleDateString()}
+                            editor={options => dateTimeEditor(options)}
+                        />
+
+                        <Column
+                            field='approved_person'
+                            header='Approved Person'
+                            editor={options => textEditor(options)}
+                        />
+
+                        <Column
+                            field='approved_date'
+                            header='Approved Date'
+                            body={options => new Date(options?.leave_end_date).toLocaleDateString()}
+                            editor={options => dateTimeEditor(options)}
+                        />
+                    </DataTable>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default LeaveReport;
