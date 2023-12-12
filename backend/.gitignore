@@ -2,3 +2,5 @@
 # Keep environment variables out of version control
 
 yarn.lock
+package-lock.json
+.DS_Store
