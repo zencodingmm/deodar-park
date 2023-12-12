@@ -1,0 +1,304 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+model tbl_attendance {
+    rid             Int       @id @default(autoincrement())
+    emp_id          Int?      @db.Int
+    emp_name        String?   @db.VarChar(100)
+    emp_rank        String?   @db.VarChar(100)
+    start_date_time DateTime? @db.DateTime(0)
+    end_date_time   DateTime? @db.DateTime(0)
+    reg_Date        DateTime  @default(now())
+}
+
+model tbl_department {
+    dept_id           Int                 @id @default(autoincrement())
+    dept_desc         String?             @db.VarChar(100)
+    tbl_employee_dept tbl_employee_dept[]
+
+    @@unique([dept_id, dept_desc])
+}
+
+model tbl_emp_insurance {
+    emp_ins_id Int    @id @default(autoincrement())
+    emp_id     Int
+    emp_name   String
+    nrc        String
+
+    emp_rank_id Int
+    rank_id     Int
+    rank_desc   String
+
+    emp_dept_id Int
+    dept_id     Int
+    dept_desc   String
+
+    iid            Int
+    insurance_type String
+    created_at     DateTime @default(now())
+
+    // Define relationships
+    employee   tbl_profile        @relation(fields: [emp_id, emp_name, nrc], references: [employeeID, employee_name, NRC], onDelete: Cascade, onUpdate: Cascade)
+    department tbl_employee_dept  @relation(fields: [emp_dept_id, dept_id, dept_desc], references: [emp_dept_id, dept_id, dept_desc], onDelete: Cascade, onUpdate: Cascade)
+    rank       tbl_employee_rank  @relation(fields: [emp_rank_id, rank_id, rank_desc], references: [emp_rank_id, rank_id, rank_desc], onDelete: Cascade, onUpdate: Cascade)
+    insurance  tbl_insurance_type @relation(fields: [iid, insurance_type], references: [iid, insurance_type], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model tbl_emp_leave {
+    emp_lev_id Int    @id @default(autoincrement())
+    emp_id     Int
+    emp_name   String
+    nrc        String
+
+    emp_dept_id Int
+    dept_id     Int
+    dept_desc   String
+
+    emp_rank_id Int
+    rank_id     Int
+    rank_desc   String
+
+    lev_id           Int
+    leave_type       String
+    total_leave_days Int
+    leave_detail     String    @db.VarChar(100)
+    leave_start_date DateTime? @db.Date
+    leave_end_date   DateTime? @db.Date
+    approved_person  String?   @db.VarChar(100)
+    approved_date    DateTime? @db.Date
+    created_at       DateTime  @default(now())
+
+    employee   tbl_profile       @relation(fields: [emp_id, emp_name, nrc], references: [employeeID, employee_name, NRC], onDelete: Cascade, onUpdate: Cascade)
+    department tbl_employee_dept @relation(fields: [emp_dept_id, dept_id, dept_desc], references: [emp_dept_id, dept_id, dept_desc], onDelete: Cascade, onUpdate: Cascade)
+    rank       tbl_employee_rank @relation(fields: [emp_rank_id, rank_id, rank_desc], references: [emp_rank_id, rank_id, rank_desc], onDelete: Cascade, onUpdate: Cascade)
+    leave      tbl_leave_type    @relation(fields: [lev_id, leave_type], references: [lev_id, lev_type], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model tbl_employee_dept {
+    emp_dept_id       Int                 @id @default(autoincrement())
+    emp_id            Int                 @unique
+    emp_name          String
+    nrc               String
+    dept_id           Int
+    dept_desc         String
+    tbl_employee_rank tbl_employee_rank[]
+    created_at        DateTime            @default(now())
+    updated_at        DateTime            @updatedAt @db.DateTime(0)
+
+    // Define relationships
+    employee          tbl_profile         @relation(fields: [emp_id, emp_name, nrc], references: [employeeID, employee_name, NRC], onDelete: Cascade, onUpdate: Cascade)
+    department        tbl_department      @relation(fields: [dept_id, dept_desc], references: [dept_id, dept_desc], onDelete: Cascade, onUpdate: Cascade)
+    tbl_emp_insurance tbl_emp_insurance[]
+    tbl_emp_leave     tbl_emp_leave[]
+
+    // Define unique constraints
+    @@unique([emp_dept_id, dept_id, dept_desc])
+}
+
+model tbl_employee_evaluation_record {
+    emp_eval_rec_id            Int       @id @default(autoincrement())
+    emp_id                     String?   @db.VarChar(100)
+    emp_rank_id                Int?
+    evaluation_desc            String?   @db.VarChar(100)
+    effort_in_work             String?   @db.VarChar(100)
+    professional_skills        String?   @db.VarChar(100)
+    compliance                 String?   @db.VarChar(100)
+    obedience_to_orders        String?   @db.VarChar(100)
+    interest_in_work           Boolean?
+    teach_again                Boolean?
+    other_evaluation_remark    String?   @db.VarChar(100)
+    approved_person_one_name   String?   @db.VarChar(100)
+    approved_person_two_name   String?   @db.VarChar(100)
+    approved_person_three_name String?   @db.VarChar(100)
+    eval_reg_date              DateTime? @db.Date
+    emp_dept_id                Int?
+    effort_in_work_mark        String?   @db.VarChar(100)
+    professional_skills_mark   String?   @db.VarChar(100)
+    compliance_mark            String?   @db.VarChar(100)
+    obedience_to_orders_mark   String?   @db.VarChar(100)
+    approved_person_one_rank   String?   @db.VarChar(100)
+    approved_person_two_rank   String?   @db.VarChar(100)
+    approved_person_three_rank String?   @db.VarChar(100)
+}
+
+model tbl_employee_rank {
+    emp_rank_id Int       @id @default(autoincrement())
+    emp_dept_id Int
+    emp_id      Int
+    emp_name    String
+    nrc         String
+    dept_id     Int
+    dept_desc   String
+    rank_id     Int
+    rank_desc   String
+    salary      Float
+    assign_date DateTime? @db.Date
+    created_at  DateTime  @default(now())
+
+    // Relationships
+    employee            tbl_profile         @relation(fields: [emp_id, emp_name, nrc], references: [employeeID, employee_name, NRC], onDelete: Cascade, onUpdate: Cascade)
+    employee_department tbl_employee_dept   @relation(fields: [emp_dept_id, dept_id, dept_desc], references: [emp_dept_id, dept_id, dept_desc], onDelete: Cascade, onUpdate: Cascade)
+    rank                tbl_rank            @relation(fields: [rank_id, rank_desc, salary], references: [rank_id, rank_desc, salary], onDelete: Cascade, onUpdate: Cascade)
+    tbl_emp_insurance   tbl_emp_insurance[]
+    tbl_emp_leave       tbl_emp_leave[]
+
+    // Unique
+    @@unique([emp_rank_id, rank_id, rank_desc])
+    // Index
+    @@index([emp_id, emp_name, nrc, emp_dept_id, dept_id, dept_desc], name: "composite_employee_index")
+}
+
+model tbl_insurance_type {
+    iid               Int                 @id @default(autoincrement())
+    insurance_type    String?             @db.VarChar(100)
+    tbl_emp_insurance tbl_emp_insurance[]
+
+    @@unique([iid, insurance_type])
+}
+
+model tbl_leave_type {
+    lev_id        Int             @id @default(autoincrement())
+    lev_type      String?         @db.VarChar(100)
+    lev_day       Int?
+    tbl_emp_leave tbl_emp_leave[]
+
+    @@unique([lev_id, lev_type])
+}
+
+model tbl_loan_record {
+    emp_loan_id           Int       @id @default(autoincrement())
+    emp_id                Int?
+    emp_rank_id           Int?
+    emp_dept_id           Int?
+    loan_id               Int?
+    loan_amount           Float?    @default(0)
+    loan_request_date     DateTime? @db.Date
+    loan_submittion_date  DateTime? @db.Date
+    loan_insurance_person String?   @db.VarChar(100)
+    loan_submited_detail  String?   @db.VarChar(100)
+    loan_issued_person    String?   @db.VarChar(100)
+    reg_date              DateTime? @db.Date
+    repayment_start_date  DateTime? @db.Date
+    repayment_end_date    DateTime? @db.Date
+}
+
+model tbl_loan_type {
+    loan_id   Int     @id @default(autoincrement())
+    loan_type String? @db.VarChar(100)
+}
+
+model tbl_overtime_actual_att {
+    rid           Int       @id @default(autoincrement())
+    shift_type_id Int?
+    emp_id        Int?
+    emp_rank_id   Int?
+    emp_dept_id   Int?
+    plan_date     DateTime? @db.Date
+    substituted   Boolean?
+    remark        String?   @db.VarChar(100)
+}
+
+model tbl_overtime_plan {
+    rid           Int       @id @default(autoincrement())
+    shift_type_id Int?
+    emp_id        Int?
+    emp_rank_id   Int?
+    emp_dept_id   Int?
+    plan_date     DateTime? @db.Date
+    substituted   Boolean?
+    remark        String?   @db.VarChar(100)
+}
+
+model tbl_overtime_shift_type {
+    rid              Int       @id @default(autoincrement())
+    shift_group_name String?   @db.VarChar(100)
+    start_date       DateTime? @db.Date
+    end_date         DateTime? @db.Date
+    start_time       DateTime? @db.DateTime(0)
+    end_time         DateTime? @db.DateTime(0)
+    serial           Int?
+}
+
+model tbl_payroll {
+    transaction_id         Int       @id @default(autoincrement())
+    emp_id                 Int?
+    emp_rank_id            Int?
+    emp_dept_id            Int?
+    account_id             Int?
+    allowance_amount       Float?
+    detection_amount       Float?
+    transaction_start_date DateTime? @db.DateTime(0)
+    closed                 Boolean?  @default(false)
+    closed_date            DateTime? @db.DateTime(0)
+    transaction_end_date   DateTime? @db.DateTime(0)
+}
+
+model tbl_payroll_account_head {
+    account_id   Int      @id @default(autoincrement())
+    account_head String?  @db.VarChar(100)
+    account_type Boolean?
+    amount       Float?
+}
+
+model tbl_payroll_ledger {
+    ledger_id        Int       @id @default(autoincrement())
+    ledger_date      DateTime? @db.Date
+    emp_id           String?   @db.VarChar(100)
+    emp_name         String?   @db.VarChar(100)
+    emp_rank         String?   @db.VarChar(100)
+    emp_dept         String?   @db.VarChar(100)
+    allowance_amount Float?
+    detection_amount Float?
+    net_payment      Float?
+    issued_date      DateTime? @db.Date
+}
+
+model tbl_profile {
+    guid                      String              @id @default(uuid()) @db.VarChar(100)
+    employeeID                Int                 @unique(map: "tbl_profile_UN") @default(autoincrement())
+    RFID                      String?             @db.VarChar(100)
+    employee_name             String              @db.VarChar(100)
+    DOB                       DateTime?           @db.Date
+    NRC                       String              @db.VarChar(100)
+    nation                    String?             @db.VarChar(100)
+    religion                  String?             @db.VarChar(100)
+    father_name               String?             @db.VarChar(100)
+    education                 String?             @db.VarChar(100)
+    experience                String?             @db.VarChar(100)
+    last_occupation           String?             @db.VarChar(100)
+    permanent_address         String?             @db.VarChar(100)
+    current_address           String?             @db.VarChar(100)
+    phone_number              String?             @db.VarChar(100)
+    FNRC_img                  String?             @db.VarChar(100)
+    BNRC_img                  String?             @db.VarChar(100)
+    recommendation_img        String?             @db.VarChar(100)
+    household_chart_img       String?             @db.VarChar(100)
+    employment_date           DateTime?           @db.Date
+    created_at                DateTime            @default(now())
+    updated_at                DateTime            @updatedAt
+    labor_registration_number String?             @db.VarChar(100)
+    social_security_number    String?             @db.VarChar(100)
+    profile_image             String?             @db.VarChar(100)
+    married                   Boolean?            @default(false)
+    tbl_employee_dept         tbl_employee_dept[]
+    tbl_employee_rank         tbl_employee_rank[]
+    tbl_emp_insurance         tbl_emp_insurance[]
+    tbl_emp_leave             tbl_emp_leave[]
+
+    @@unique([employeeID, employee_name, NRC])
+}
+
+model tbl_rank {
+    rank_id           Int                 @id @default(autoincrement())
+    rank_desc         String?             @db.VarChar(100)
+    salary            Float?
+    tbl_employee_rank tbl_employee_rank[]
+
+    @@unique([rank_id, rank_desc, salary])
+}
