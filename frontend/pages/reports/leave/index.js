@@ -85,7 +85,7 @@ const LeaveReport = () => {
     };
 
     const dropDownEditor = options => {
-        const value = leaveType.find(lt => lt.lev_type === options.value);
+        const value = leaveType.find(leave => leave.lev_type === options.value);
 
         return (
             <Dropdown

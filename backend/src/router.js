@@ -16,7 +16,8 @@ const EntryOvertimeShift = require('./components/overtime/entry/overtime.route')
 const TransactionDepartment = require('./components/department/transaction/department.route');
 const TransactionRank = require('./components/rank/transaction/rank.route');
 const TransactionInsurance = require('./components/insurance/transaction/insurance.route');
-const TransactionLeave = require('./components/leave/transaction/leave.route')
+const TransactionLeave = require('./components/leave/transaction/leave.route');
+const TransactionLoan = require('./components/loan/transaction/loan.route');
 
 // ---------------------------
 
@@ -37,7 +38,8 @@ router.use('/overtime/entry', EntryOvertimeShift);
 router.use('/department/transaction', TransactionDepartment);
 router.use('/rank/transaction', TransactionRank);
 router.use('/insurance/transaction', TransactionInsurance);
-router.use('/leave/transaction', TransactionLeave)
+router.use('/leave/transaction', TransactionLeave);
+router.use('/loan/transaction', TransactionLoan);
 // ---------------------------
 
 module.exports = router;

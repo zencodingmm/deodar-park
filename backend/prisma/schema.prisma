@@ -96,6 +96,7 @@ model tbl_employee_dept {
     department        tbl_department      @relation(fields: [dept_id, dept_desc], references: [dept_id, dept_desc], onDelete: Cascade, onUpdate: Cascade)
     tbl_emp_insurance tbl_emp_insurance[]
     tbl_emp_leave     tbl_emp_leave[]
+    tbl_loan_record   tbl_loan_record[]
 
     // Define unique constraints
     @@unique([emp_dept_id, dept_id, dept_desc])
@@ -147,6 +148,7 @@ model tbl_employee_rank {
     rank                tbl_rank            @relation(fields: [rank_id, rank_desc, salary], references: [rank_id, rank_desc, salary], onDelete: Cascade, onUpdate: Cascade)
     tbl_emp_insurance   tbl_emp_insurance[]
     tbl_emp_leave       tbl_emp_leave[]
+    tbl_loan_record     tbl_loan_record[]
 
     // Unique
     @@unique([emp_rank_id, rank_id, rank_desc])
@@ -172,25 +174,45 @@ model tbl_leave_type {
 }
 
 model tbl_loan_record {
-    emp_loan_id           Int       @id @default(autoincrement())
-    emp_id                Int?
-    emp_rank_id           Int?
-    emp_dept_id           Int?
-    loan_id               Int?
+    emp_loan_id Int    @id @default(autoincrement())
+    emp_id      Int
+    emp_name    String
+    nrc         String
+
+    emp_dept_id Int
+    dept_id     Int
+    dept_desc   String
+
+    emp_rank_id Int
+    rank_id     Int
+    rank_desc   String
+
+    loan_id   Int
+    loan_type String
+
     loan_amount           Float?    @default(0)
     loan_request_date     DateTime? @db.Date
     loan_submittion_date  DateTime? @db.Date
     loan_insurance_person String?   @db.VarChar(100)
-    loan_submited_detail  String?   @db.VarChar(100)
     loan_issued_person    String?   @db.VarChar(100)
-    reg_date              DateTime? @db.Date
+    created_at            DateTime  @default(now())
     repayment_start_date  DateTime? @db.Date
     repayment_end_date    DateTime? @db.Date
+    loan_submited_detail  String?   @db.VarChar(100)
+
+    employee   tbl_profile       @relation(fields: [emp_id, emp_name, nrc], references: [employeeID, employee_name, NRC], onDelete: Cascade, onUpdate: Cascade)
+    department tbl_employee_dept @relation(fields: [emp_dept_id, dept_id, dept_desc], references: [emp_dept_id, dept_id, dept_desc], onDelete: Cascade, onUpdate: Cascade)
+    rank       tbl_employee_rank @relation(fields: [emp_rank_id, rank_id, rank_desc], references: [emp_rank_id, rank_id, rank_desc], onDelete: Cascade, onUpdate: Cascade)
+    loan       tbl_loan_type     @relation(fields: [loan_id, loan_type], references: [loan_id, loan_type], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model tbl_loan_type {
     loan_id   Int     @id @default(autoincrement())
     loan_type String? @db.VarChar(100)
+
+    tbl_loan_record tbl_loan_record[]
+
+    @@unique([loan_id, loan_type])
 }
 
 model tbl_overtime_actual_att {
@@ -290,6 +312,7 @@ model tbl_profile {
     tbl_employee_rank         tbl_employee_rank[]
     tbl_emp_insurance         tbl_emp_insurance[]
     tbl_emp_leave             tbl_emp_leave[]
+    tbl_loan_record           tbl_loan_record[]
 
     @@unique([employeeID, employee_name, NRC])
 }

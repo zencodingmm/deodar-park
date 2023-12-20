@@ -30,6 +30,12 @@ exports.getAllHandler = async (req, res) => {
         const { page, pageSize } = req.query;
         const skip = Number(page) * Number(pageSize);
 
+        if (!page && !pageSize) {
+            const loan = await prisma.tbl_loan_type.findMany();
+
+            return res.status(200).json({ data: loan });
+        }
+
         if (page && pageSize) {
             const [loan, totalRecord] = await prisma.$transaction([
                 prisma.tbl_loan_type.findMany({
@@ -39,7 +45,7 @@ exports.getAllHandler = async (req, res) => {
                 prisma.tbl_loan_type.count(),
             ]);
 
-            res.status(200).json({ data: loan, totalRecord });
+            return res.status(200).json({ data: loan, totalRecord });
         }
     } catch (error) {
         res.status(500).json({ error: error.message });

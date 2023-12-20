@@ -38,7 +38,7 @@ const CreateLoanType = () => {
             });
             const { message } = res.data;
 
-            if (res.status === 200) {
+            if (res.status === 201) {
                 fetchLoan();
                 toastRef.current.show({
                     severity: 'success',
